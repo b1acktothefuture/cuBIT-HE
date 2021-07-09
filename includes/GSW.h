@@ -7,6 +7,7 @@
 
 void genGadget(long n,matrix &G);
 void fillRand(matrix &mat);
+void gaussian(matrix &m,double b);
 
 struct parameters{
     bigH q;

@@ -30,7 +30,7 @@ void gaussian(matrix &m,double b){ // the distribution is uniform, change it to 
     for(long i = 0;i<m.cols*m.rows;i++){
         //t = rng(int())%m.q; //edit this to gaussian distribution
         err = int(round(distribution(rng)));
-        if(err < 0) t = (m.q + err);
+        if(err < 0) t = (m.q - (-1*err));
         else t = err;
         v[i] += t;
         if(!(v[i] < m.q)) v[i] -= m.q;

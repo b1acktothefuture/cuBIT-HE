@@ -131,13 +131,20 @@ void test_invG(int n,int bits,bigH q){
     print_martix(G.vec,G.rows,G.cols);
 }
 
+void test_gaussian(int n,float b,bigH q){
+    matrix test(1,n,q);
+    for(int i = 0;i<n;i++){
+        test.vec[i] = 0;
+    }
+    gaussian(test,b);
+    print_martix(test.vec,1,n);
+}
 
 int main(){
     cout << "Enter n and bits:";
-    uint n,bits;
-    cin >> n>>bits;
-    bigH q = 1;
-    q <<= bits;
-    q += 1;
-    test_invG(n,bits,q);
+    uint n;
+    float b;
+    cin >> n>>b;
+    bigH q = 100;
+    test_gaussian(n,b,q);
 }
