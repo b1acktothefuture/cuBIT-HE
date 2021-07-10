@@ -33,6 +33,8 @@ void matmul(matrix& x,const matrix& m,const matrix& n);
 bigH* sparse_mul(bigH* A,unsigned char* B,int m,int n,bigH q);
 void print_martix(bigH* b,int rows,int cols);
 void print_martix(unsigned char* b,int rows,int cols);
+unsigned char* inverseG(bigH* matrix,int n,int m,int bits);
+void add_cpu(bigH* a,bigH* B,long size,bigH q);
 
 // void add(matrix& x,const matrix& a,const matrix& c);
 

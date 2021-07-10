@@ -5,22 +5,6 @@
 
 // nvcc -c GPU_wrapper.cu kernel.cu includes/uint256_t-master/uint128_t.cpp includes/uint256_t-master/uint256_t.cpp && g++ -o tests -I/usr/local/cuda/include -L/usr/local/cuda/lib64 tests.cpp GPU_wrapper.o kernel.o  uint256_t.o uint128_t.o -lcuda -lcudart && rm kernel.o uint256_t.o uint128_t.o GPU_wrapper.o
 
-unsigned char* inverseG(bigH* matrix,int n,int m,int bits){
-    unsigned char* ret = (unsigned char* )malloc(sizeof(unsigned char)*n*bits*m);
-    bigH temp;
-    for(int i = 0;i<m;i++){
-        for(int j = 0;j<n;j++){
-            temp = matrix[j*m+i];
-            // cout << temp << endl;
-            for(int k = 0;k<bits;k++){
-                ret[(j*bits + k)*m + i] = temp&1;
-                temp >>= 1;
-            }
-        }
-    }
-    return ret;
-}
-
 void test_inverseG(int m,int n,int bits,bigH q){
     std::random_device rd;
     std::mt19937_64 gen(rd());
@@ -151,12 +135,44 @@ void testKeygen(long n,long bits,float b,bigH q){
     print_martix(B.vec,B.rows,B.cols);
 }
 
+void testEnc(long n,long bits,float b,bigH q,unsigned char bit){
+    parameters *p = new parameters(n,(n+1)*bits,q,b,bits);
+    GSW test(p);
+    test.keygen();
+    matrix R(test.params.n + 1,test.params.m,test.params.q);
+    fillRand(R);
+    unsigned char* spar = inverseG(R.vec,R.rows,R.cols,bits);
+    bigH* check = sparse_mul(test.pk.vec,spar,test.pk.rows,test.pk.cols,q);
+    if(bit == 1){
+        cout << "adding G\n";
+        add_cpu(check,test.G.vec,test.G.rows*test.G.cols,q);
+    }
+    cout << "moving to GPU\n";
+    bigH* ret = encrypt(test.pk.vec,R.vec,test.G.vec,test.params.q,test.pk.rows,test.pk.cols,bits,bit);
+    for(int i = 0;i<R.rows*R.cols;i++){
+        assert(check[i] == ret[i]);
+    }
+    cout << "test passed\n";
+}
+
+void test_speed(long n,long bits,float b,bigH q,unsigned char bit){
+    parameters *p = new parameters(n,(n+1)*bits,q,b,bits);
+    GSW test(p);
+    test.keygen();
+    matrix R(test.params.n + 1,test.params.m,test.params.q);
+    fillRand(R);
+    cout << "moving to GPU\n";
+    bigH* ret = encrypt(test.pk.vec,R.vec,test.G.vec,test.params.q,test.pk.rows,test.pk.cols,bits,bit);
+    cout << "done\n";
+}
+
 int main(){
-    cout << "Enter n and bits:";
-    uint n,bits;
-    cin >> n>>bits;
+    cout << "Enter n ,bits and message(0/1): ";
+    uint n,bits,bit;
+    cin >> n>>bits>>bit;
     bigH q = 1;
-    q <<= bits+1;
+    q <<= bits-1;
+    q+= 1;
     cout << q <<endl;
-    testKeygen(n,bits,3.6,q);
+    test_speed(n,bits,3.6,q,bit);
 }

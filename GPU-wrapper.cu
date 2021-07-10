@@ -1,10 +1,13 @@
 #include "includes/GPU_wrapper.h"
 #include "includes/kernel.cuh"
 
+/******************************************************************************/
+// helper functions
+
 void print_martix(big* b,int rows,int cols){
     for(int i = 0;i<rows;i++){
     for(int j = 0;j<cols;j++)
-        std::cout << b[i*cols + j].w << " ";
+        std::cout << b[i*cols + j].x << " ";
     std::cout << std::endl;
     }
     cout << endl;
@@ -25,27 +28,27 @@ big bighToBig(bigH g){
 
 bigH bigTobigH(big q){
     bigH g(0);
-    g += q.x;
-    g <<= 32;
-    g += q.y;
+    g += q.w;
     g <<= 32;
     g += q.z;
     g <<= 32;
-    g += q.w;
+    g += q.y;
+    g <<= 32;
+    g += q.x;
     return g;
 }
 
-big* convert(bigH* matrix,int size){
+big* convert(bigH* matrix,long size){
     big* ret = (big *)malloc(sizeof(big)*size);
-    for(int i =0;i<size;i++){
+    for(long i =0;i<size;i++){
         ret[i] = bighToBig(matrix[i]);
     }
     return ret;
 }
 
-bigH* convertBack(big* matrix,int size){
+bigH* convertBack(big* matrix,long size){
     bigH* ret = (bigH *)malloc(sizeof(bigH)*size);
-    for(int i =0;i<size;i++){
+    for(long i =0;i<size;i++){
         ret[i] = bigTobigH(matrix[i]);
     }
     return ret;
@@ -60,7 +63,7 @@ void encryptHelper(big* A,big* R,big* G,big* result,big q,uint bits,unsigned cha
     dim3 dimBlock(BLOCK_SIZE, BLOCK_SIZE);
 
     gpu_sparse_mult<<<dimGrid,dimBlock>>>(A,R,result,n,m,bits,q);
-
+    cudaThreadSynchronize();
     if(bit == 1){
         int blockSize = 256;
         int numBlocks = (m*n + blockSize - 1) / blockSize;
@@ -69,10 +72,8 @@ void encryptHelper(big* A,big* R,big* G,big* result,big q,uint bits,unsigned cha
 }
 
 
-
-
-/**************************************************************************/
-
+/******************************************************************************/
+// Tests
 
 void test(big* A,big* R,big* result,big q,uint bits,uint n,uint m){
     big* d_matrix1,*d_matrix2,*d_result;
@@ -111,26 +112,6 @@ void test(big* A,big* R,big* result,big q,uint bits,uint n,uint m){
     free(chck);
 }
 
-
-/******************************************************************************/
-
-bigH* encrypt(bigH* pk_h,bigH* R_h,bigH* G_h,bigH q_h,uint n,uint m,unsigned char bit){
-    big* PK = convert(pk_h,m*n);
-    big* R = convert(R_h,m*n);
-    big* G = convert(G_h,m*n);
-    
-    big* pk_d,*R_d,*G_d;
-    cudaMalloc((void **)&pk_d,sizeof(big)*n*m);
-    cudaMalloc((void **)&R_d,sizeof(big)*n*m);
-    cudaMalloc((void **)&G_d,sizeof(big)*n*m);
-
-    cudaMemcpy(pk_d,PK,sizeof(u128)*m*n,cudaMemcpyHostToDevice);
-    cudaMemcpy(R_d,R,sizeof(u128)*m*n,cudaMemcpyHostToDevice);
-    cudaMemcpy(G_d,G,sizeof(u128)*m*n,cudaMemcpyHostToDevice);
-
-}
-
-
 void MAIN_TEST_GPU(bigH* A_h,bigH* R_h,bigH* result_h,bigH g,uint bits,int n,int m){
     big* A = convert(A_h,m*n);
     big* R = convert(R_h,m*n);
@@ -145,3 +126,38 @@ void MAIN_TEST_GPU(bigH* A_h,bigH* R_h,bigH* result_h,bigH g,uint bits,int n,int
     free(result);
     
 }
+
+/******************************************************************************/
+
+
+bigH* encrypt(bigH* pk_h,bigH* R_h,bigH* G_h,bigH q_h,uint n,uint m,uint bits,unsigned char bit){
+    long size = m*n;
+    big* PK = convert(pk_h,size);
+    big* R = convert(R_h,size);
+    big* G = convert(G_h,size);
+    big g = bighToBig(q_h);
+
+    
+    big* pk_d,*R_d,*G_d,*result_d;
+    cudaMalloc((void **)&pk_d,sizeof(big)*size);
+    cudaMalloc((void **)&R_d,sizeof(big)*size);
+    cudaMalloc((void **)&G_d,sizeof(big)*size);
+    cudaMalloc((void **)&result_d,sizeof(big)*size);
+
+    cudaMemcpy(pk_d,PK,sizeof(u128)*size,cudaMemcpyHostToDevice);
+    cudaMemcpy(R_d,R,sizeof(u128)*size,cudaMemcpyHostToDevice);
+    cudaMemcpy(G_d,G,sizeof(u128)*size,cudaMemcpyHostToDevice);
+
+    free(PK);
+    free(G);
+
+    encryptHelper(pk_d,R_d,G_d,result_d,g,bits,bit,n,m);
+
+    cudaMemcpy(R,result_d,sizeof(u128)*size,cudaMemcpyDeviceToHost);;
+    bigH* cipherText = convertBack(R,size);
+
+    return cipherText;
+
+}
+
+

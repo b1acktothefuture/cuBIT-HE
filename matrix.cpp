@@ -66,6 +66,29 @@ bigH* sparse_mul(bigH* A,unsigned char* B,int m,int n,bigH q){  // m*n & n*n
     return result;
 }
 
+unsigned char* inverseG(bigH* matrix,int n,int m,int bits){
+    unsigned char* ret = (unsigned char* )malloc(sizeof(unsigned char)*n*bits*m);
+    bigH temp;
+    for(int i = 0;i<m;i++){
+        for(int j = 0;j<n;j++){
+            temp = matrix[j*m+i];
+            // cout << temp << endl;
+            for(int k = 0;k<bits;k++){
+                ret[(j*bits + k)*m + i] = temp&1;
+                temp >>= 1;
+            }
+        }
+    }
+    return ret;
+}
+
+void add_cpu(bigH* a,bigH* b,long size,bigH q){
+    for(int i = 0;i<size;i++){
+        a[i] += b[i];
+        if(!(a[i]<q)) a[i] -= q;
+    }
+}
+
 void print_martix(bigH* b,int rows,int cols){
     unsigned int u = UINT32_MAX;
     for(int i = 0;i<rows;i++){
