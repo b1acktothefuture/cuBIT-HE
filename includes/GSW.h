@@ -23,7 +23,7 @@ struct parameters{
 };
 
 class GSW{
-    bool z = 0;
+    int z = 0;
     public:
     parameters params;
     matrix sk,pk,G;
@@ -32,8 +32,8 @@ class GSW{
 
     void keygen();
 
-    matrix encryptBit(int t);
-    int decryptBit(matrix C); // check if decryption is closer to q/2 or {0,q};
+    void encryptBit(int t,matrix& m);
+    int decryptBit(matrix& C); // check if decryption is closer to q/2 or {0,q};
 
 };
 

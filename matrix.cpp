@@ -36,10 +36,12 @@ void matmul(matrix& x,const matrix& m,const matrix& n){
     for(long j = 0;j<n.cols;j++){
         sum = 0;
         for(int k = 0;k<m.cols;k++){
+            // 256 bit arithmetic
             h1 = biggerH(one[N*i + k]);
             h2 = biggerH(two[k*K + j]);
             holder = (h1*h2);
             if(!(holder < q)) holder %= q;
+            
             sum += holder.lower();
             if(!(sum < q)) sum -= q;
         }

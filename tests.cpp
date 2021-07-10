@@ -140,11 +140,23 @@ void test_gaussian(int n,float b,bigH q){
     print_martix(test.vec,1,n);
 }
 
+void testKeygen(long n,long bits,float b,bigH q){
+    parameters *p = new parameters(n,(n+1)*bits,q,b,bits);
+    GSW test(p);
+    test.keygen();
+
+    matrix B(1,p->m,q);
+    matmul(B,test.sk,test.pk);
+
+    print_martix(B.vec,B.rows,B.cols);
+}
+
 int main(){
     cout << "Enter n and bits:";
-    uint n;
-    float b;
-    cin >> n>>b;
-    bigH q = 100;
-    test_gaussian(n,b,q);
+    uint n,bits;
+    cin >> n>>bits;
+    bigH q = 1;
+    q <<= bits+1;
+    cout << q <<endl;
+    testKeygen(n,bits,3.6,q);
 }

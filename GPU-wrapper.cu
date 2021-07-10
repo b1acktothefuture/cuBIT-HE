@@ -52,7 +52,7 @@ bigH* convertBack(big* matrix,int size){
 }
 
 
-void encryptH(big* A,big* R,big* G,big* result,big q,uint bits,unsigned char bit,int n,int m){
+void encryptHelper(big* A,big* R,big* G,big* result,big q,uint bits,unsigned char bit,int n,int m){
 
     unsigned int grid_rows = (n + BLOCK_SIZE - 1) / BLOCK_SIZE;
     unsigned int grid_cols = (m + BLOCK_SIZE - 1) / BLOCK_SIZE;
@@ -74,7 +74,7 @@ void encryptH(big* A,big* R,big* G,big* result,big q,uint bits,unsigned char bit
 /**************************************************************************/
 
 
-void test(big* A,big* R,big* result,big q,uint bits,int n,int m){
+void test(big* A,big* R,big* result,big q,uint bits,uint n,uint m){
     big* d_matrix1,*d_matrix2,*d_result;
     cudaMalloc((void **)&d_matrix1,sizeof(u128)*n*m);
     cudaMalloc((void **)&d_matrix2,sizeof(u128)*n*m);
@@ -113,6 +113,22 @@ void test(big* A,big* R,big* result,big q,uint bits,int n,int m){
 
 
 /******************************************************************************/
+
+bigH* encrypt(bigH* pk_h,bigH* R_h,bigH* G_h,bigH q_h,uint n,uint m,unsigned char bit){
+    big* PK = convert(pk_h,m*n);
+    big* R = convert(R_h,m*n);
+    big* G = convert(G_h,m*n);
+    
+    big* pk_d,*R_d,*G_d;
+    cudaMalloc((void **)&pk_d,sizeof(big)*n*m);
+    cudaMalloc((void **)&R_d,sizeof(big)*n*m);
+    cudaMalloc((void **)&G_d,sizeof(big)*n*m);
+
+    cudaMemcpy(pk_d,PK,sizeof(u128)*m*n,cudaMemcpyHostToDevice);
+    cudaMemcpy(R_d,R,sizeof(u128)*m*n,cudaMemcpyHostToDevice);
+    cudaMemcpy(G_d,G,sizeof(u128)*m*n,cudaMemcpyHostToDevice);
+
+}
 
 
 void MAIN_TEST_GPU(bigH* A_h,bigH* R_h,bigH* result_h,bigH g,uint bits,int n,int m){

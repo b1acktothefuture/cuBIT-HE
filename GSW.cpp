@@ -19,6 +19,7 @@ void fillRand(matrix &mat){
         v[i] = rng(bigH());
         if(!(v[i] < mod)) v[i] %= mod;
     }
+    ~rng();
 }
 
 void gaussian(matrix &m,double b){ // the distribution is uniform, change it to gaussian
@@ -43,10 +44,11 @@ GSW::GSW(parameters *p){
     G.reshape(params.n + 1,params.bits*(params.n + 1));
     G.q = p->q;
     genGadget(params.bits,G);
+    z = 1;
 }
 
 void GSW::keygen(){
-
+    assert(z==1);
     sk.reshape(1,params.n + 1);
     pk.reshape(params.n + 1,params.m);
     sk.q = params.q;
@@ -55,10 +57,21 @@ void GSW::keygen(){
     fillRand(sk);
     fillRand(pk);
     
-    sk.set(1,sk.cols-1,0);
+    sk.set(0,sk.cols-1,0);
     matrix B(1,params.m,params.q);
 
     matmul(B,sk,pk);
     gaussian(B,params.b);
 
+    long last = pk.cols*(pk.rows-1);
+    for(long i = 0;i<pk.cols;i++)
+        pk.vec[last + i] = B.vec[i];
+    
+    sk.set(0,sk.cols-1,sk.q - 1);
+    z = 2;
+}
+
+void GSW::encryptBit(int t,matrix& m){
+    matrix R(params.n+1,params.m,params.q);
+    fillRand(R);
 }
