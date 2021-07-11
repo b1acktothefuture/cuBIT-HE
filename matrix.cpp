@@ -27,15 +27,21 @@ void matrix::reshape(long m,long n){
 
 void matmul(matrix& x,const matrix& m,const matrix& n){
     assert(m.cols == n.rows);
+    bigH* one = m.vec,*two = n.vec,*res = x.vec;
+    long i,j,k;
+    long M = m.rows,N = n.cols,K = n.cols;
+    // #pragma omp parallel shared(one,two,res) private(i,j,k) 
+    {
+
     biggerH holder,h1,h2;
     bigH sum,q;
     q = m.q;
-    bigH* one = m.vec,*two = n.vec,*res = x.vec;
-    long M = m.rows,N = n.cols,K = n.cols;
-    for(long i = 0;i<m.rows;i++)
-    for(long j = 0;j<n.cols;j++){
+
+    // #pragma omp for  schedule(static)
+    for(i = 0;i<m.rows;i++)
+    for(j = 0;j<n.cols;j++){
         sum = 0;
-        for(int k = 0;k<m.cols;k++){
+        for(k = 0;k<m.cols;k++){
             // 256 bit arithmetic
             h1 = biggerH(one[N*i + k]);
             h2 = biggerH(two[k*K + j]);
@@ -46,6 +52,7 @@ void matmul(matrix& x,const matrix& m,const matrix& n){
             if(!(sum < q)) sum -= q;
         }
         res[K*i + j] = sum;
+    }
     }
 }
 

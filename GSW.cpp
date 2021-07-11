@@ -44,6 +44,15 @@ GSW::GSW(parameters *p){
     G.reshape(params.n + 1,params.bits*(params.n + 1));
     G.q = p->q;
     genGadget(params.bits,G);
+
+    matrix w(1,1,params.q);
+    bigH t = params.q;
+    if(t&1 == 1) t = (t>>1) + 1;
+    else t >>= 1;
+    w.vec[0] = t;
+
+    W = inverseG(w.vec,w.rows,w.cols,params.bits);
+
     z = 1;
 }
 
@@ -72,6 +81,50 @@ void GSW::keygen(){
 }
 
 void GSW::encryptBit(int t,matrix& m){
+    assert(t==0 || t==1);
+    assert(z==2);
     matrix R(params.n+1,params.m,params.q);
     fillRand(R);
+    free(m.vec);
+    m.vec = encrypt(pk.vec,R.vec,G.vec,params.q,pk.rows,pk.cols,params.bits,t);
+    m.q =params.q;
+    m.rows = params.n + 1;
+    m.cols = params.m;
+}
+
+int GSW::decryptBit(matrix& C){
+    assert(z==2);
+    bigH t = params.q;
+    if(t&1 == 1) t = (t>>1) + 1;
+    else t >>= 1;
+    bigH sum,q;
+    q = params.q;
+    // bigH* temp = sparse_mul(C.vec,W,C.rows,C.cols,C.q);
+    matrix ret(params.n+1,1,q);
+    bigH* ct = C.vec;
+    long m = params.m;
+
+    for(long i = 0;i<C.rows;i++){
+        sum = 0;
+    for(long k = 0;k<params.bits;k++){
+        if(W[k] == 1){
+            sum += ct[(i+1)*m - params.bits + k];
+            if(!(sum < q)) sum -= q;
+        }
+    }
+        ret.vec[i] = sum;    
+    }
+
+    matrix res;
+    res.q = params.q;
+
+    matmul(res,sk,ret);
+    bigH bit = res.vec[0];
+
+    bigH zero = min(bit, params.q-bit);
+    bigH one;
+    if(bit > t) one = bit - t;
+    else one = t - bit;
+    return (one < zero);
+
 }

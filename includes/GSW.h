@@ -27,6 +27,7 @@ class GSW{
     public:
     parameters params;
     matrix sk,pk,G;
+    unsigned char* W;
 
     GSW(parameters* p);
 

@@ -2,7 +2,9 @@
 #include <cuda.h>
 #include "includes/matrix.h"
 #include "includes/GSW.h"
+#include <chrono>
 
+using namespace std::chrono;
 // nvcc -c GPU_wrapper.cu kernel.cu includes/uint256_t-master/uint128_t.cpp includes/uint256_t-master/uint256_t.cpp && g++ -o tests -I/usr/local/cuda/include -L/usr/local/cuda/lib64 tests.cpp GPU_wrapper.o kernel.o  uint256_t.o uint128_t.o -lcuda -lcudart && rm kernel.o uint256_t.o uint128_t.o GPU_wrapper.o
 
 void test_inverseG(int m,int n,int bits,bigH q){
@@ -137,8 +139,11 @@ void testKeygen(long n,long bits,float b,bigH q){
 
 void testEnc(long n,long bits,float b,bigH q,unsigned char bit){
     parameters *p = new parameters(n,(n+1)*bits,q,b,bits);
-    GSW test(p);
+    GSW test(p);    
     test.keygen();
+
+    cout << "Keygen Done\n";
+
     matrix R(test.params.n + 1,test.params.m,test.params.q);
     fillRand(R);
     unsigned char* spar = inverseG(R.vec,R.rows,R.cols,bits);
@@ -158,21 +163,62 @@ void testEnc(long n,long bits,float b,bigH q,unsigned char bit){
 void test_speed(long n,long bits,float b,bigH q,unsigned char bit){
     parameters *p = new parameters(n,(n+1)*bits,q,b,bits);
     GSW test(p);
+
+    auto start = high_resolution_clock::now();
+
     test.keygen();
-    matrix R(test.params.n + 1,test.params.m,test.params.q);
-    fillRand(R);
-    cout << "moving to GPU\n";
-    bigH* ret = encrypt(test.pk.vec,R.vec,test.G.vec,test.params.q,test.pk.rows,test.pk.cols,bits,bit);
-    cout << "done\n";
+
+    auto stop = high_resolution_clock::now();
+
+    auto duration = duration_cast<seconds>(stop - start);
+
+    cout << "keygen done, time taken: " << duration.count() << "\n";
+    
+    start = high_resolution_clock::now();
+    matrix m;
+    test.encryptBit(bit,m);
+    stop = high_resolution_clock::now();
+    duration = duration_cast<seconds>(stop - start);
+
+    cout << "Enc. done, time taken: " << duration.count() << "\n";
+}
+
+void test_w(long n,long bits,float b,bigH q,unsigned char bit){
+    parameters *p = new parameters(n,(n+1)*bits,q,b,bits);
+    GSW test(p);
+
+    print_martix(test.W,test.params.bits,1);
+}
+
+void test_d(long n,long bits,float b,bigH q){
+    parameters *p = new parameters(n,(n+1)*bits,q,b,bits);
+    GSW test(p);
+    test.keygen();
+    cout << "Keygen Done\n";
+
+    matrix m;
+    int bit1,bit2;
+
+    for (int i = 0;i<10;i++){
+        bit1 = rand()%2;
+        cout << "Encrypting.. ";
+        test.encryptBit(bit1,m);
+        cout << "Done \nDecrypting..\n";
+        bit2 = test.decryptBit(m);
+        if(bit1 != bit2){ cout << "Test"  << i << " failed!!\n"; return;} 
+        else cout << "Test " << i << " Passed\n";
+    }
+    cout << "All tests passed\n";
 }
 
 int main(){
     cout << "Enter n ,bits and message(0/1): ";
     uint n,bits,bit;
-    cin >> n>>bits>>bit;
+    float b;
+    cin >> n>>bits>>b;
     bigH q = 1;
     q <<= bits-1;
     q+= 1;
     cout << q <<endl;
-    test_speed(n,bits,3.6,q,bit);
+    test_d(n,bits,b,q);
 }
