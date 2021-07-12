@@ -3,11 +3,8 @@
 
 #include "matrix.h"
 #include "csprng.hpp"
+#include <fstream>
 
-
-void genGadget(long n,matrix &G);
-void fillRand(matrix &mat);
-void gaussian(matrix &m,double b);
 
 struct parameters{
     bigH q;
@@ -30,12 +27,20 @@ class GSW{
     unsigned char* W;
 
     GSW(parameters* p);
+    GSW(string s,string p,string par);
 
     void keygen();
+
+    void saveState();
 
     void encryptBit(int t,matrix& m);
     int decryptBit(matrix& C); // check if decryption is closer to q/2 or {0,q};
 
 };
+
+void genGadget(long n,matrix &G);
+void fillRand(matrix &mat);
+void gaussian(matrix &m,double b);
+parameters* setup(int kappa,int L);
 
 #endif

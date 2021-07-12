@@ -1,5 +1,66 @@
 #include "includes/GSW.h"
 
+
+parameters* setup(int kappa,int L){
+    float sigma = 3.6;float sigma6 = 6*sigma;
+    ZZ lower_bound;
+    unsigned long n = (kappa+110)/7.2;
+    ZZ quotient(4);
+    unsigned long l = floor(log(quotient)/log(2)) + 1;
+    unsigned long N = (n + 1) * l;
+    while (true) {
+        power(lower_bound, N+1,L);
+        lower_bound *= 8 * sigma6;
+        if (quotient <= lower_bound) {
+            NextPrime(quotient, lower_bound);
+        } else {
+            break;
+        }
+        n = log(quotient/ceil(sigma))*(kappa + 110)/(7.2*log(2));
+        l = floor(log(quotient)/log(2)) + 1;
+        N = (n + 1) * l;
+    }
+    long t = NumBits(quotient);
+    if(t<128) {
+        bigH q = 0;
+        bigH temp;
+        for(long i = 0;i<l;i++){
+            temp = bit(quotient,i);
+            q |= temp<<i;
+        }
+        parameters *p = new parameters(n,N,q,sigma,t);
+        cout <<"Size of Modulus: " << l << endl;
+        cout << "Dimension: "<< n << endl;
+        return p;
+    }
+    else return setup(64,3);
+}
+
+void writeMatrix(matrix& c,string s){
+    ofstream CT(s+ ".txt");
+    CT << c.rows << " " << c.cols << endl;
+    for(long i = 0;i<c.rows*c.cols;i++){
+        CT << c.vec[i] << endl;
+    }
+    CT.close();
+}
+
+void readMatrix(matrix& c,string s){
+    fstream CT(s, std::ios_base::in);
+    long b;
+    ulong n,m;
+    CT >> n;
+    CT >> m;
+    c.reshape(n,m);
+    long i = 0;
+    while (CT >> b)
+    {
+        c.vec[i] = b;
+        i++;
+    }
+    CT.close();
+}
+
 void genGadget(long bits,matrix &G){
     bigH* b = G.vec;
     int m = G.rows,n = G.cols;
@@ -127,4 +188,19 @@ int GSW::decryptBit(matrix& C){
     else one = t - bit;
     return (one < zero);
 
+}
+
+void GSW::saveState(){
+    cout << "warning!!, this will overwrite existing files (if any), want to proceed?? (0/1): ";
+    int i;
+    cin >> i;
+    if(i==1){
+    cout << "writing secret key...\n";
+    writeMatrix(sk,"secretKey");
+    cout << "writing public key...\n";
+    writeMatrix(pk,"publicKey");
+    cout << "writing parameters...\n";
+    ofstream CT("params.txt");
+    CT << params.n << "\n" << params.m << "\n" << params.q << "\n" << params.b << "\n"<<params.bits;
+    }
 }

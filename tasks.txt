@@ -1,0 +1,24 @@
+1. Make keygen faster
+- random generation in a range faster
+- generate pk itself in matmul() operation
+- can use montgomery reduction??
+
+2. Move randomised encryption completely to GPU
+- need to generate (secure) random integers in a range on GPU
+- substraction is left
+- need a secure csprng for that, check if duthomhas is compatible
+{ approach, flip for MSB, if not set, use current function, if set, fing next set bit and .... }
+
+3. Adding Batch encryption, given array of messages, pk, sk, and q, Batch encrypt all of them and send back the result
+- batch decryption too.
+
+4. Gate evaluation, use stack to evaluate cicuit
+- implement gates, XOR, AND, NAND
+- add a interface to give ckt as input
+- evaluate ckt faster, parallely
+
+5. Reading and writing keys/params from/to a file (CPU)
+- generate keys once and save them to read when needed 
+- add another constructor to GSW class
+- need a way to read uint128_t directly from file
+

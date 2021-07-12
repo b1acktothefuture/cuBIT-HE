@@ -190,8 +190,12 @@ void test_w(long n,long bits,float b,bigH q,unsigned char bit){
     print_martix(test.W,test.params.bits,1);
 }
 
-void test_d(long n,long bits,float b,bigH q){
-    parameters *p = new parameters(n,(n+1)*bits,q,b,bits);
+void test_d(){
+    int k, l;
+    cout << "Enter k and L: ";
+    cin >> k >> l;
+    parameters *p = setup(k,l);
+    // parameters *p = new parameters(n,(n+1)*bits,q,b,bits);
     GSW test(p);
     test.keygen();
     cout << "Keygen Done\n";
@@ -211,14 +215,16 @@ void test_d(long n,long bits,float b,bigH q){
     cout << "All tests passed\n";
 }
 
+void test_saving(){
+    int k, l;
+    cout << "Enter k and L: ";
+    cin >> k >> l;
+    parameters *p = setup(k,l);
+    GSW test(p);
+    test.keygen();
+    test.saveState();
+}
+
 int main(){
-    cout << "Enter n ,bits and message(0/1): ";
-    uint n,bits,bit;
-    float b;
-    cin >> n>>bits>>b;
-    bigH q = 1;
-    q <<= bits-1;
-    q+= 1;
-    cout << q <<endl;
-    test_d(n,bits,b,q);
+    test_saving();
 }

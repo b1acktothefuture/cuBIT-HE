@@ -98,3 +98,4 @@ void gpu_add(uint size,big q, big *x, big *y) // adds x to y mod q
     sub_uint128(&y[i],q);
   }
 }
+

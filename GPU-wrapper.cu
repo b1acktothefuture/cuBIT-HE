@@ -16,13 +16,14 @@ void print_martix(big* b,int rows,int cols){
 big bighToBig(bigH g){
     uint AND = UINT32_MAX;
     big q;
-    q.x = g&AND;
-    g >>= 32;
-    q.y = g&AND;
-    g >>= 32;
-    q.z = g&AND;
-    g >>= 32;
-    q.w = g&AND;
+    uint64_t word = g.lower();
+    q.x = word&AND;
+    word >>= 32;
+    q.y = word&AND;
+    word = g.upper();
+    q.z = word&AND;
+    word >>= 32;
+    q.w = word&AND;
     return q;
 }
 
@@ -71,7 +72,25 @@ void encryptHelper(big* A,big* R,big* G,big* result,big q,uint bits,unsigned cha
     }
 }
 
+void fillRandom(big q, uint bits, big* R,long size){ // will work only for modulus size strictly less than 128
+    
+    long words = size/32;
+    long rem = size%32;
+    uint t = 1,arr[4];
+    t <<= rem;
 
+    arr[0] = 0;arr[1] = 0;arr[2] = 0;arr[3] = 0;
+
+    for(long i = 0;i<size;i++){
+        for(long j = 0;j<words;j++){
+            arr[j] = rand();
+        }
+        arr[words] = rand()%t;
+        R[i].x = arr[0];R[i].y = arr[1];R[i].z = arr[2];R[i].w = arr[3];
+        // sub_cpu(&R[i],q);
+    }
+
+}
 /******************************************************************************/
 // Tests
 
@@ -127,6 +146,10 @@ void MAIN_TEST_GPU(bigH* A_h,bigH* R_h,bigH* result_h,bigH g,uint bits,int n,int
     
 }
 
+void test_generator(bigH g,uint bits){
+    big q = bighToBig(g);
+}
+
 /******************************************************************************/
 
 
@@ -155,6 +178,12 @@ bigH* encrypt(bigH* pk_h,bigH* R_h,bigH* G_h,bigH q_h,uint n,uint m,uint bits,un
 
     cudaMemcpy(R,result_d,sizeof(u128)*size,cudaMemcpyDeviceToHost);;
     bigH* cipherText = convertBack(R,size);
+
+
+    cudaFree(pk_d);
+    cudaFree(R_d);
+    cudaFree(G_d);
+    cudaFree(result_d);
 
     return cipherText;
 
