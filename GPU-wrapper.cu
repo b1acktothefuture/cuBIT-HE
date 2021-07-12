@@ -72,24 +72,22 @@ void encryptHelper(big* A,big* R,big* G,big* result,big q,uint bits,unsigned cha
     }
 }
 
-void fillRandom(big q, uint bits, big* R,long size){ // will work only for modulus size strictly less than 128
-    
+void fillRandom(big* R,long size,long len){ // will work only for modulus size strictly less than 128
     long words = size/32;
     long rem = size%32;
     uint t = 1,arr[4];
     t <<= rem;
-
+    duthomhas::csprng rng;
     arr[0] = 0;arr[1] = 0;arr[2] = 0;arr[3] = 0;
-
-    for(long i = 0;i<size;i++){
+    uint AND = 0xFFFFFFFF;
+    for(long i = 0;i<len;i++){
         for(long j = 0;j<words;j++){
-            arr[j] = rand();
+            arr[j] = rng(uint());
         }
-        arr[words] = rand()%t;
+        arr[words] = rng(uint())%t; // pathological case, when rem = 31
         R[i].x = arr[0];R[i].y = arr[1];R[i].z = arr[2];R[i].w = arr[3];
-        // sub_cpu(&R[i],q);
     }
-
+    ~rng();
 }
 /******************************************************************************/
 // Tests
@@ -146,21 +144,62 @@ void MAIN_TEST_GPU(bigH* A_h,bigH* R_h,bigH* result_h,bigH g,uint bits,int n,int
     
 }
 
-void test_generator(bigH g,uint bits){
-    big q = bighToBig(g);
-}
 
 /******************************************************************************/
 
 
 bigH* encrypt(bigH* pk_h,bigH* R_h,bigH* G_h,bigH q_h,uint n,uint m,uint bits,unsigned char bit){
     long size = m*n;
+
+// converting between u128 representation on cpu and GPU
+
     big* PK = convert(pk_h,size);
     big* R = convert(R_h,size);
     big* G = convert(G_h,size);
     big g = bighToBig(q_h);
-
     
+    big* pk_d,*R_d,*G_d,*result_d;
+/*
+copying keys,random matrix R, and Gadget matrix G from host to device
+*/
+    cudaMalloc((void **)&pk_d,sizeof(big)*size); 
+    cudaMalloc((void **)&R_d,sizeof(big)*size);
+    cudaMalloc((void **)&G_d,sizeof(big)*size);
+    cudaMalloc((void **)&result_d,sizeof(big)*size);
+
+    cudaMemcpy(pk_d,PK,sizeof(u128)*size,cudaMemcpyHostToDevice);
+    cudaMemcpy(R_d,R,sizeof(u128)*size,cudaMemcpyHostToDevice);
+    cudaMemcpy(G_d,G,sizeof(u128)*size,cudaMemcpyHostToDevice);
+
+// freeing unncessary representation of pk and G on CPU
+
+    free(PK);
+    free(G);
+// actual encryption function
+    encryptHelper(pk_d,R_d,G_d,result_d,g,bits,bit,n,m);
+// copying the result back to host
+    cudaMemcpy(R,result_d,sizeof(u128)*size,cudaMemcpyDeviceToHost);;
+    bigH* cipherText = convertBack(R,size);
+
+// free memory from GPU
+    cudaFree(pk_d);
+    cudaFree(R_d);
+    cudaFree(G_d);
+    cudaFree(result_d);
+
+    return cipherText;
+
+}
+
+bigH* encryptFast(bigH* pk_h, bigH* G_h,bigH q_h,uint n,uint m,uint bits,unsigned char bit){
+    long size = m*n;
+    big* PK = convert(pk_h,size);
+    big* G = convert(G_h,size);
+    big g = bighToBig(q_h);
+
+    big* R = (big*)malloc(sizeof(big)*size);
+    fillRandom(R,bits,size);
+
     big* pk_d,*R_d,*G_d,*result_d;
     cudaMalloc((void **)&pk_d,sizeof(big)*size);
     cudaMalloc((void **)&R_d,sizeof(big)*size);
@@ -176,7 +215,7 @@ bigH* encrypt(bigH* pk_h,bigH* R_h,bigH* G_h,bigH q_h,uint n,uint m,uint bits,un
 
     encryptHelper(pk_d,R_d,G_d,result_d,g,bits,bit,n,m);
 
-    cudaMemcpy(R,result_d,sizeof(u128)*size,cudaMemcpyDeviceToHost);;
+    cudaMemcpy(R,result_d,sizeof(u128)*size,cudaMemcpyDeviceToHost);
     bigH* cipherText = convertBack(R,size);
 
 
@@ -184,9 +223,41 @@ bigH* encrypt(bigH* pk_h,bigH* R_h,bigH* G_h,bigH q_h,uint n,uint m,uint bits,un
     cudaFree(R_d);
     cudaFree(G_d);
     cudaFree(result_d);
-
+    free(R);
     return cipherText;
-
 }
 
+void encryptBatch(bigH* pk_h, bigH* G_h,bigH q_h,uint n,uint m,uint bits,unsigned char* bit,bigH** cipherTexts,int len){
+    long size = m*n;
+    big* PK = convert(pk_h,size);
+    big* G = convert(G_h,size);
+    big g = bighToBig(q_h);
 
+    big* R = (big*)malloc(sizeof(big)*size);
+
+    big* pk_d,*R_d,*G_d,*result_d;
+    cudaMalloc((void **)&pk_d,sizeof(big)*size);
+    cudaMalloc((void **)&R_d,sizeof(big)*size);
+    cudaMalloc((void **)&G_d,sizeof(big)*size);
+    cudaMalloc((void **)&result_d,sizeof(big)*size);
+
+    cudaMemcpy(pk_d,PK,sizeof(u128)*size,cudaMemcpyHostToDevice);
+    cudaMemcpy(G_d,G,sizeof(u128)*size,cudaMemcpyHostToDevice);
+
+    free(PK);
+    free(G);
+
+    for(int i = 0;i<len;i++){
+        fillRandom(R,bits,size);
+        cudaMemcpy(R_d,R,sizeof(u128)*size,cudaMemcpyHostToDevice);
+        encryptHelper(pk_d,R_d,G_d,result_d,g,bits,bit[i],n,m);
+        cudaMemcpy(R,result_d,sizeof(u128)*size,cudaMemcpyDeviceToHost);
+        cipherTexts[i] = convertBack(R,size);
+    }
+
+    cudaFree(pk_d);
+    cudaFree(R_d);
+    cudaFree(G_d);
+    cudaFree(result_d);
+    free(R);
+}

@@ -141,13 +141,21 @@ void GSW::keygen(){
     z = 2;
 }
 
-void GSW::encryptBit(int t,matrix& m){
+void GSW::encryptBit(int t,matrix& m,int i){
     assert(t==0 || t==1);
     assert(z==2);
+// i=1 for generating random matrix on CPU, very slow, trust me
+    free(m.vec);    
+    if(i){
     matrix R(params.n+1,params.m,params.q);
     fillRand(R);
-    free(m.vec);
+    cout << "Moving to GPU\n";
     m.vec = encrypt(pk.vec,R.vec,G.vec,params.q,pk.rows,pk.cols,params.bits,t);
+    }
+    
+    else
+        m.vec = encryptFast(pk.vec,G.vec,params.q,pk.rows,pk.cols,params.bits,t);
+    
     m.q =params.q;
     m.rows = params.n + 1;
     m.cols = params.m;

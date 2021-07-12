@@ -209,8 +209,9 @@ void test_d(){
         test.encryptBit(bit1,m);
         cout << "Done \nDecrypting..\n";
         bit2 = test.decryptBit(m);
+        assert(bit1 == bit2);
         if(bit1 != bit2){ cout << "Test"  << i << " failed!!\n"; return;} 
-        else cout << "Test " << i << " Passed\n";
+        else cout << "Test " << i + 1 << " Passed\n\n";
     }
     cout << "All tests passed\n";
 }
@@ -226,5 +227,5 @@ void test_saving(){
 }
 
 int main(){
-    test_saving();
+    test_d();
 }

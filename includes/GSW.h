@@ -33,8 +33,10 @@ class GSW{
 
     void saveState();
 
-    void encryptBit(int t,matrix& m);
+    void encryptBit(int t,matrix& m,int i = 0);
     int decryptBit(matrix& C); // check if decryption is closer to q/2 or {0,q};
+
+    matrix* encryptBits(unsigned char* C,int i =0);
 
 };
 
