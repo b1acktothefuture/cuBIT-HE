@@ -216,7 +216,64 @@ void test_d(){
     cout << "All tests passed\n";
 }
 
+void batch_test(){
+    int k, l;
+    cout << "Enter k and L: ";
+    cin >> k >> l;
+    parameters *p = setup(k,l);
+    cout << p->q <<endl;
+    GSW test(p);
+    test.keygen();
+    cout << "Keygen Done\n";
+
+    unsigned char flips[5];
+    for(int i = 0;i<5;i++) flips[i] = (rand()%2);
+
+    matrix* enc = test.encryptBits(flips,5);
+
+    unsigned char t;
+    for(int i = 0;i<5;i++){
+        t = test.decryptBit(enc[i]);
+        assert(t == flips[i]);
+    }
+    cout << "passed\n";
+}
+
 void test_saving(){
+    int k, l;
+    cout << "Enter k and L: ";
+    cin >> k >> l;
+    parameters *p = setup(k,l);
+    GSW test1(p);
+    test1.keygen();
+    test1.saveState();
+    // cout << test1.decryptBit(c)<<endl;
+    GSW test2("secretKey.txt","publicKey.txt","params.txt");
+    matrix m;
+    int bit1,bit2;
+    for (int i = 0;i<10;i++){
+        bit1 = rand()%2;
+        cout << "Encrypting.. ";
+        test1.encryptBit(bit1,m);
+        cout << "Done \nDecrypting..\n";
+        bit2 = test2.decryptBit(m);
+        assert(bit1 == bit2);
+        if(bit1 != bit2){ cout << "Test"  << i << " failed!!\n"; return;} 
+        else cout << "Test " << i + 1 << " Passed\n\n";
+    }
+    cout << "All tests passed\n";
+    
+}
+
+void test_mTimesG(){
+    bigH g = 129;
+    int bits = 7;
+    matrix G(10,10*bits,g);
+    message_times_gadget(bits,G,3);
+    print_martix(G.vec,G.rows,G.cols);
+}
+
+void test_readAndwrite(){
     int k, l;
     cout << "Enter k and L: ";
     cin >> k >> l;
@@ -224,8 +281,11 @@ void test_saving(){
     GSW test(p);
     test.keygen();
     test.saveState();
+    matrix m;
+    readMatrix(m,"publicKey.txt");
+    writeMatrix(m,"pkCopy");
 }
 
 int main(){
-    test_d();
+    test_saving();
 }

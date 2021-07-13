@@ -9,7 +9,7 @@
 - need a secure csprng for that, check if duthomhas is compatible
 { approach, flip for MSB, if not set, use current function, if set, fing next set bit and .... }
 
-3. Adding Batch encryption, given array of messages, pk, sk, and q, Batch encrypt all of them and send back the result
+3. Adding Batch encryption, given array of messages, pk, sk, and q, Batch encrypt all of them and send back the result // done, test remaining
 - batch decryption too.
 
 4. Gate evaluation, use stack to evaluate cicuit

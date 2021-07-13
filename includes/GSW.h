@@ -35,8 +35,11 @@ class GSW{
 
     void encryptBit(int t,matrix& m,int i = 0);
     int decryptBit(matrix& C); // check if decryption is closer to q/2 or {0,q};
+    void encryptZ(bigH Z,matrix& m,int i = 0);
+    bigH decryptZ(matrix& m);
 
-    matrix* encryptBits(unsigned char* C,int i =0);
+    matrix* encryptBits(unsigned char* C,int len);
+    unsigned char* decryptBits(matrix* C,int len);
 
 };
 
@@ -44,5 +47,6 @@ void genGadget(long n,matrix &G);
 void fillRand(matrix &mat);
 void gaussian(matrix &m,double b);
 parameters* setup(int kappa,int L);
+void message_times_gadget(long bits,matrix &G,bigH message);
 
 #endif

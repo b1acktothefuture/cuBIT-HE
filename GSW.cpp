@@ -36,37 +36,25 @@ parameters* setup(int kappa,int L){
     else return setup(64,3);
 }
 
-void writeMatrix(matrix& c,string s){
-    ofstream CT(s+ ".txt");
-    CT << c.rows << " " << c.cols << endl;
-    for(long i = 0;i<c.rows*c.cols;i++){
-        CT << c.vec[i] << endl;
-    }
-    CT.close();
-}
-
-void readMatrix(matrix& c,string s){
-    fstream CT(s, std::ios_base::in);
-    long b;
-    ulong n,m;
-    CT >> n;
-    CT >> m;
-    c.reshape(n,m);
-    long i = 0;
-    while (CT >> b)
-    {
-        c.vec[i] = b;
-        i++;
-    }
-    CT.close();
-}
-
 void genGadget(long bits,matrix &G){
     bigH* b = G.vec;
     int m = G.rows,n = G.cols;
     b[0] = 1;
     for(long i = 1;i<bits;i++)
         b[i] = b[i-1] << 1;
+    for(long i = 1;i<G.rows;i++)
+        for(long j = 0;j<bits;j++)
+            b[n*i + i*bits + j] = b[j];
+}
+
+void message_times_gadget(long bits,matrix &G,bigH message){
+    bigH* b = G.vec;
+    int m = G.rows,n = G.cols;
+    b[0] = message;
+    for(long i = 1;i<bits;i++){
+        b[i] = b[i-1] << 1;
+        if(!(b[i] < G.q)) b[i] %= G.q;
+    }
     for(long i = 1;i<G.rows;i++)
         for(long j = 0;j<bits;j++)
             b[n*i + i*bits + j] = b[j];
@@ -117,6 +105,45 @@ GSW::GSW(parameters *p){
     z = 1;
 }
 
+ GSW::GSW(string s,string p,string par){
+    readMatrix(sk,s);
+    readMatrix(pk,p);
+    fstream CT(par, std::ios_base::in);
+
+    uint64_t t,n,m,bits;
+    float b;
+    bigH q;
+    CT >> n;
+    CT >> m;
+    
+    CT >> t;
+    q = t;
+    q <<= 64;
+    CT >> t;
+    q += t;
+
+    CT >> b;
+    CT >> bits;
+
+    params = parameters(n,m,q,b,bits);    
+    sk.q = q;
+    pk.q = q;
+
+    G.reshape(params.n + 1,params.bits*(params.n + 1));
+    G.q = params.q;
+    genGadget(params.bits,G);
+
+    matrix w(1,1,params.q);
+    bigH th = params.q;
+    if(th&1 == 1) th = (th>>1) + 1;
+    else th >>= 1;
+    w.vec[0] = th;
+
+    W = inverseG(w.vec,w.rows,w.cols,params.bits);
+
+    z = 2;
+}
+
 void GSW::keygen(){
     assert(z==1);
     sk.reshape(1,params.n + 1);
@@ -161,6 +188,46 @@ void GSW::encryptBit(int t,matrix& m,int i){
     m.cols = params.m;
 }
 
+matrix* GSW::encryptBits(unsigned char* t,int len){
+    bigH** c = (bigH**)malloc(sizeof(bigH*)*len);
+    encryptBatch(pk.vec,G.vec,params.q,pk.rows,pk.cols,params.bits,t,c,len);
+
+    matrix* ret = new matrix[len];
+    for(int i = 0;i<len;i++){
+        ret[i].vec = c[i];
+        ret[i].rows = params.n + 1;
+        ret[i].cols = params.m ;
+        ret[i].q = params.q;
+    }
+    return ret;
+}
+
+void GSW::encryptZ(bigH M,matrix& m,int i){
+    if(!(M<params.q)) M %= params.q;
+    assert(z==2);
+
+    matrix G_prime;
+    G_prime.reshape(params.n + 1,params.bits*(params.n + 1));
+    G.q = params.q;
+    message_times_gadget(params.bits,G_prime,M);
+
+
+    free(m.vec);    
+    if(i){
+    matrix R(params.n+1,params.m,params.q);
+    fillRand(R);
+    cout << "Moving to GPU\n";
+    m.vec = encrypt(pk.vec,R.vec,G.vec,params.q,pk.rows,pk.cols,params.bits,1);
+    }
+    
+    else
+        m.vec = encryptFast(pk.vec,G_prime.vec,params.q,pk.rows,pk.cols,params.bits,1);
+    
+    m.q =params.q;
+    m.rows = params.n + 1;
+    m.cols = params.m;
+}
+
 int GSW::decryptBit(matrix& C){
     assert(z==2);
     bigH t = params.q;
@@ -198,6 +265,10 @@ int GSW::decryptBit(matrix& C){
 
 }
 
+bigH decryptZ(matrix& m){
+    return 0;
+}
+
 void GSW::saveState(){
     cout << "warning!!, this will overwrite existing files (if any), want to proceed?? (0/1): ";
     int i;
@@ -209,6 +280,6 @@ void GSW::saveState(){
     writeMatrix(pk,"publicKey");
     cout << "writing parameters...\n";
     ofstream CT("params.txt");
-    CT << params.n << "\n" << params.m << "\n" << params.q << "\n" << params.b << "\n"<<params.bits;
+    CT << params.n << "\n" << params.m << "\n" << params.q.upper() << "\n" << params.q.lower()<<"\n" <<params.b << "\n"<<params.bits;
     }
 }

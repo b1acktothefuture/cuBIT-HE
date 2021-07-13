@@ -55,7 +55,6 @@ bigH* convertBack(big* matrix,long size){
     return ret;
 }
 
-
 void encryptHelper(big* A,big* R,big* G,big* result,big q,uint bits,unsigned char bit,int n,int m){
 
     unsigned int grid_rows = (n + BLOCK_SIZE - 1) / BLOCK_SIZE;

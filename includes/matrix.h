@@ -35,6 +35,8 @@ void print_martix(bigH* b,int rows,int cols);
 void print_martix(unsigned char* b,int rows,int cols);
 unsigned char* inverseG(bigH* matrix,int n,int m,int bits);
 void add_cpu(bigH* a,bigH* B,long size,bigH q);
+void writeMatrix(matrix& c,string s);
+void readMatrix(matrix& m,string s);
 
 // void add(matrix& x,const matrix& a,const matrix& c);
 

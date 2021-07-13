@@ -115,3 +115,33 @@ void print_martix(unsigned char* b,int rows,int cols){
     }
     cout << endl;
 }
+
+void writeMatrix(matrix& c,string s){
+    ofstream CT(s+ ".txt");
+    CT << c.rows << " " << c.cols << endl;
+    for(long i = 0;i<c.rows*c.cols;i++){
+        CT << c.vec[i].upper() << " "<< c.vec[i].lower() << endl;
+    }
+    CT.close();
+}
+
+void readMatrix(matrix& c,string s){
+    fstream CT(s, std::ios_base::in);
+    bigH b;
+    ulong n,m;
+    CT >> n;
+    CT >> m;
+    c.reshape(n,m);
+    uint64_t t;
+    long i = 0;
+    while (CT >> t)
+    {
+        b = t;
+        b <<= 64;
+        CT >> t;
+        b += t;
+        c.vec[i] = b;
+        i++;
+    }
+    CT.close();
+}

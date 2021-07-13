@@ -22,5 +22,6 @@ typedef uint256_t biggerH;
 void MAIN_TEST_GPU(bigH* A_h,bigH* R_h,bigH* result_h,bigH g,uint bits,int n,int m);
 bigH* encrypt(bigH* pk_h,bigH* R_h,bigH* G_h,bigH q_h,uint n,uint m,uint bits,unsigned char bit);
 bigH* encryptFast(bigH* pk_h, bigH* G_h,bigH q_h,uint n,uint m,uint bits,unsigned char bit);
+void encryptBatch(bigH* pk_h, bigH* G_h,bigH q_h,uint n,uint m,uint bits,unsigned char* bit,bigH** cipherTexts,int len);
 
 #endif
