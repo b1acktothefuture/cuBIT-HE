@@ -192,37 +192,36 @@ copying keys,random matrix R, and Gadget matrix G from host to device
 
 bigH* encryptFast(bigH* pk_h, bigH* G_h,bigH q_h,uint n,uint m,uint bits,unsigned char bit){
     long size = m*n;
-    big* PK = convert(pk_h,size);
-    big* G = convert(G_h,size);
     big g = bighToBig(q_h);
-
-    big* R = (big*)malloc(sizeof(big)*size);
-    fillRandom(R,bits,size);
 
     big* pk_d,*R_d,*G_d,*result_d;
     cudaMalloc((void **)&pk_d,sizeof(big)*size);
     cudaMalloc((void **)&R_d,sizeof(big)*size);
     cudaMalloc((void **)&G_d,sizeof(big)*size);
     cudaMalloc((void **)&result_d,sizeof(big)*size);
-
+    
+    big* PK = convert(pk_h,size);
     cudaMemcpy(pk_d,PK,sizeof(u128)*size,cudaMemcpyHostToDevice);
-    cudaMemcpy(R_d,R,sizeof(u128)*size,cudaMemcpyHostToDevice);
-    cudaMemcpy(G_d,G,sizeof(u128)*size,cudaMemcpyHostToDevice);
-
     free(PK);
+    
+    big* G = convert(G_h,size);
+    cudaMemcpy(G_d,G,sizeof(u128)*size,cudaMemcpyHostToDevice);
     free(G);
 
+    big* R = (big*)malloc(sizeof(big)*size);
+    fillRandom(R,bits,size);
+    
+    cudaMemcpy(R_d,R,sizeof(u128)*size,cudaMemcpyHostToDevice);
     encryptHelper(pk_d,R_d,G_d,result_d,g,bits,bit,n,m);
 
     cudaMemcpy(R,result_d,sizeof(u128)*size,cudaMemcpyDeviceToHost);
     bigH* cipherText = convertBack(R,size);
-
-
+    free(R);
+    
     cudaFree(pk_d);
     cudaFree(R_d);
     cudaFree(G_d);
     cudaFree(result_d);
-    free(R);
     return cipherText;
 }
 
