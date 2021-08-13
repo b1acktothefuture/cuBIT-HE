@@ -329,28 +329,80 @@ void somewhat()
     cout << "Enter kappa : ";
     cin >> k;
 
-    cout << "Enter message1 and message2 : ";
-    cin >> m1 >> m2;
     parameters *p = setupSW(k);
     somewhatGSW test(p);
     test.keygen();
+
+    cout << p->q << endl;
+    cout << "Enter message1 and message2 : ";
+    cin >> m1 >> m2;
+
     matrix C1;
     test.encryptSW(m1, C1);
     matrix C2;
     test.encryptSW(m2, C2);
     add_cpu(C1.vec, C2.vec, C1.rows * C1.cols, C1.q);
-    bigH ret = test.decryptSW(C1);
+    bigH ret = test.decryptMP(C1);
     cout << "Addition is: " << ret << endl;
     cout << "Enter message and k: ";
     cin >> m1 >> m2;
     test.encryptSW(m1, C1);
     test.mul(C1, m2);
-    ret = test.decryptSW(C1);
+    ret = test.decryptMP(C1);
     cout << "Product is: " << ret << endl;
+}
+
+void testDecZp()
+{
+    int k;
+    uint64_t m1;
+    cout << "Enter kappa : ";
+    cin >> k;
+
+    parameters *p = setupSW(k);
+    somewhatGSW test(p);
+    test.keygen();
+
+    cout << p->q << endl;
+    cout << "Enter message : ";
+    cin >> m1;
+    matrix C1;
+    test.encryptSW(m1, C1);
+    cout << test.decryptMP(C1) << endl;
+}
+
+void menu()
+{
+    cout << "Menu:\n"
+         << "1. test_d\n"
+         << "2. batch_test\n"
+         << "3. test_saving\n"
+         << "4. somewhat\n"
+         << "5. dec in Zp\n"
+         << "enter choice: ";
+    int choice;
+    cin >> choice;
+    switch (choice)
+    {
+    case 1:
+        test_d();
+        break;
+    case 2:
+        batch_test();
+        break;
+    case 3:
+        test_saving();
+        break;
+    case 4:
+        somewhat();
+        break;
+    case 5:
+        testDecZp();
+        break;
+    }
 }
 
 int main()
 {
-    // test_d();
-    somewhat();
+    menu();
 }

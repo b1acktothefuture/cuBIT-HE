@@ -1,4 +1,4 @@
-#include "includes/somewhat.h"
+#include "../includes/somewhat.h"
 
 void getGadget(bigH u, long bits, matrix &G)
 {
@@ -20,33 +20,49 @@ void getGadget(bigH u, long bits, matrix &G)
 
 parameters *setupSW(int kappa)
 {
-    ZZ quotient = GenGermainPrime_ZZ(kappa, 80);
-    bigH q = 0, temp;
-    long l = floor(log(quotient) / log(2)) + 1;
-    long t = NumBits(quotient);
-    for (long i = 0; i < l; i++)
-    {
-        temp = bit(quotient, i);
-        q |= temp << i;
-    }
+    ZZ quotient = GenGermainPrime_ZZ(kappa + 1, 80);
+    bigH q = 1, temp;
+
+    // long l = floor(log(quotient) / log(2)) + 1;
+    // long t = NumBits(quotient);
+    // for (long i = 0; i < l; i++)
+    // {
+    //     temp = bit(quotient, i);
+    //     q |= temp << i;
+    // }
+
+    q <<= kappa;
     long n = kappa;
-    long N = (n + 1) * l;
-    parameters *p = new parameters(n, N, q, 1.0, t);
+    long N = (n + 1) * kappa;
+    parameters *p = new parameters(n, N, q, 1.0, kappa);
+    // parameters *p = new parameters(256, (256 + 1) * 16, 1 << 15, 1.0, 16);
     return p;
 }
 
-void somewhatGSW::encryptSW(bigH u, matrix &m)
+void somewhatGSW::encryptSW(bigH u, matrix &m, int T)
 {
     assert(z == 2);
+    if (u >= params.q)
+        u = u % params.q;
+
+    m.q = params.q;
+    m.reshape(G.rows, G.cols);
+
+    if (T == 1)
+    {
+        matrix GG(G.rows, G.cols, params.q);
+        getGadget(u, params.bits, GG);
+        m.vec = encryptFast(pk.vec, GG.vec, params.q, pk.rows, pk.cols, params.bits, 1);
+        return;
+    }
+
+    getGadget(u, params.bits, m);
     unsigned char *R = new unsigned char[params.m * params.m];
     for (int i = 0; i < params.m * params.m; i++)
         R[i] = rand() % 2;
     bigH *vec = sparse_mul(pk.vec, R, params.n + 1, params.m, params.q);
     matrix A(params.n + 1, params.m, vec, params.q);
     // matrix b(sk.rows, pk.cols, params.q);
-    m.q = params.q;
-    m.reshape(G.rows, G.cols);
-    getGadget(u, params.bits, m);
 
     for (long i = 0; i < G.rows * G.cols; i++)
     {
@@ -84,6 +100,7 @@ bigH somewhatGSW::decryptSW(matrix &C)
 
     for (auto i : modes)
     {
+        cout << i.first << endl;
         bigH dist = 0;
         bigH container;
         for (long j = 0; j < sg.rows * sg.cols; j++)
@@ -105,6 +122,58 @@ bigH somewhatGSW::decryptSW(matrix &C)
     }
     //cout << best_num << endl;
     return best_num;
+}
+
+unsigned int closer(bigH bit, bigH q)
+{
+    bigH zero = min(bit, q - bit);
+    bigH one;
+    bigH t = q >> 1;
+    if (bit > t)
+        one = bit - t;
+    else
+        one = t - bit;
+    return (one < zero);
+}
+
+bigH somewhatGSW::decryptMP(matrix &C)
+{
+    assert(z == 2);
+    long l = params.m / (params.n + 1);
+    // long l = params.bits;
+    matrix uG(1, l, params.q);
+
+    biggerH holder, h1, h2;
+    bigH sum, q;
+    q = params.q;
+    long start = params.m - l;
+
+    for (long k = start; k < params.m; k++)
+    {
+        sum = 0;
+        for (long j = 0; j < C.rows; j++)
+        {
+            h1 = biggerH(sk.vec[j]);
+            h2 = biggerH(C.vec[j * C.cols + k]);
+            holder = (h1 * h2);
+            if (!(holder < q))
+                holder %= q;
+
+            sum += holder.lower();
+            if (!(sum < q))
+                sum -= q;
+        }
+        uG.vec[k - start] = sum;
+    }
+
+    bigH message = 0, it, pow = 1, iBIT;
+    for (long i = 0; i <= l - 1; i++)
+    {
+        iBIT = closer(uG.vec[l - 1 - i] - (message << (l - 1 - i)), q);
+        message = message | (iBIT << i);
+    }
+
+    return message;
 }
 
 void somewhatGSW::add(matrix &a, matrix &b, matrix &r)

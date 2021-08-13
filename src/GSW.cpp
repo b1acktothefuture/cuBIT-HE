@@ -1,4 +1,4 @@
-#include "includes/GSW.h"
+#include "../includes/GSW.h"
 
 parameters *setup(int kappa, int L)
 {

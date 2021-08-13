@@ -1,4 +1,4 @@
-#include "includes/matrix.h"
+#include "../includes/matrix.h"
 
 matrix::matrix(long n, long m, bigH mod)
 {
