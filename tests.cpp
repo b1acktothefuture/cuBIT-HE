@@ -2,6 +2,7 @@
 #include <cuda.h>
 #include "includes/matrix.h"
 #include "includes/GSW.h"
+#include "includes/somewhat.h"
 #include <chrono>
 
 using namespace std::chrono;
@@ -296,15 +297,6 @@ void test_saving()
     // cout << "All tests passed\n";
 }
 
-void test_mTimesG()
-{
-    bigH g = 129;
-    int bits = 7;
-    matrix G(10, 10 * bits, g);
-    message_times_gadget(bits, G, 3);
-    print_martix(G.vec, G.rows, G.cols);
-}
-
 void test_readAndwrite()
 {
     int k, l;
@@ -340,7 +332,7 @@ void somewhat()
     cout << "Enter message1 and message2 : ";
     cin >> m1 >> m2;
     parameters *p = setupSW(k);
-    GSW test(p);
+    somewhatGSW test(p);
     test.keygen();
     matrix C1;
     test.encryptSW(m1, C1);
@@ -352,14 +344,7 @@ void somewhat()
     cout << "Enter message and k: ";
     cin >> m1 >> m2;
     test.encryptSW(m1, C1);
-    biggerH container;
-    for (long i = 0; i < C1.rows * C1.cols; i++)
-    {
-        container = biggerH(C1.vec[i]) * biggerH(m2);
-        if (!(container < C1.q))
-            container %= C1.q;
-        C1.vec[i] = container.lower();
-    }
+    test.mul(C1, m2);
     ret = test.decryptSW(C1);
     cout << "Product is: " << ret << endl;
 }
