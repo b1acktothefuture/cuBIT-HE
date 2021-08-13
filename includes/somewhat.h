@@ -16,6 +16,6 @@ public:
     void mul(matrix &c1, bigH c);
 };
 
-parameters *setupSW(int kappa);
+parameters *setupSW(int kappa, int mode = 0);
 
 #endif

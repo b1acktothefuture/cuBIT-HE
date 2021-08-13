@@ -92,7 +92,6 @@ void fillRandom(big *R, long size, long len)
     arr[1] = 0;
     arr[2] = 0;
     arr[3] = 0;
-    uint AND = 0xFFFFFFFF;
     for (long i = 0; i < len; i++)
     {
         for (long j = 0; j < words; j++)

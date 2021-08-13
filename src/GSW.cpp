@@ -14,13 +14,9 @@ parameters *setup(int kappa, int L)
         power(lower_bound, N + 1, L);
         lower_bound *= 8 * sigma6;
         if (quotient <= lower_bound)
-        {
             NextPrime(quotient, lower_bound);
-        }
         else
-        {
             break;
-        }
         n = log(quotient / ceil(sigma)) * (kappa + 110) / (7.2 * log(2));
         l = floor(log(quotient) / log(2)) + 1;
         N = (n + 1) * l;

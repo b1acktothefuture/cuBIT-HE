@@ -329,7 +329,7 @@ void somewhat()
     cout << "Enter kappa : ";
     cin >> k;
 
-    parameters *p = setupSW(k);
+    parameters *p = setupSW(k, 0);
     somewhatGSW test(p);
     test.keygen();
 
@@ -338,7 +338,7 @@ void somewhat()
     cin >> m1 >> m2;
 
     matrix C1;
-    test.encryptSW(m1, C1);
+    test.encryptSW(m1, C1, 1);
     matrix C2;
     test.encryptSW(m2, C2);
     add_cpu(C1.vec, C2.vec, C1.rows * C1.cols, C1.q);
@@ -359,7 +359,7 @@ void testDecZp()
     cout << "Enter kappa : ";
     cin >> k;
 
-    parameters *p = setupSW(k);
+    parameters *p = setupSW(k, 0);
     somewhatGSW test(p);
     test.keygen();
 

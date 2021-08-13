@@ -1,4 +1,4 @@
-#  GSW13 Leveled Homomorphic Encryption accelerated in Cuda
+#  GSW13 Leveled Homomorphic Encryption
 
 ## Running test cases: <br/>
 

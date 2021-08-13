@@ -18,20 +18,36 @@ void getGadget(bigH u, long bits, matrix &G)
             b[n * i + i * bits + j] = b[j];
 }
 
-parameters *setupSW(int kappa)
+unsigned int closer(bigH bit, bigH q)
+{
+    bigH zero = min(bit, q - bit);
+    bigH one;
+    bigH t = q >> 1;
+    if (bit > t)
+        one = bit - t;
+    else
+        one = t - bit;
+    return (one < zero);
+}
+
+parameters *setupSW(int kappa, int mode)
 {
     ZZ quotient = GenGermainPrime_ZZ(kappa + 1, 80);
     bigH q = 1, temp;
 
-    // long l = floor(log(quotient) / log(2)) + 1;
-    // long t = NumBits(quotient);
-    // for (long i = 0; i < l; i++)
-    // {
-    //     temp = bit(quotient, i);
-    //     q |= temp << i;
-    // }
-
-    q <<= kappa;
+    if (mode)
+    {
+        q = 0;
+        long l = floor(log(quotient) / log(2)) + 1;
+        long t = NumBits(quotient);
+        for (long i = 0; i < l; i++)
+        {
+            temp = bit(quotient, i);
+            q |= temp << i;
+        }
+    }
+    else
+        q <<= kappa;
     long n = kappa;
     long N = (n + 1) * kappa;
     parameters *p = new parameters(n, N, q, 1.0, kappa);
@@ -122,18 +138,6 @@ bigH somewhatGSW::decryptSW(matrix &C)
     }
     //cout << best_num << endl;
     return best_num;
-}
-
-unsigned int closer(bigH bit, bigH q)
-{
-    bigH zero = min(bit, q - bit);
-    bigH one;
-    bigH t = q >> 1;
-    if (bit > t)
-        one = bit - t;
-    else
-        one = t - bit;
-    return (one < zero);
 }
 
 bigH somewhatGSW::decryptMP(matrix &C)
